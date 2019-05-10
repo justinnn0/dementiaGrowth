@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8' />
+    <title>Display a map</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox.js/v2.1.9/mapbox.css' rel='stylesheet' />
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin:0; padding:0; }
+        #map { position:absolute; top:0; bottom:0; width:100%; }
+        .map-overlay {
+            font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            position: absolute;
+            width: 25%;
+            top: 0;
+            left: 0;
+            padding: 10px;
+        }
+
+        .map-overlay .map-overlay-inner {
+            background-color: #fff;
+            box-shadow:0 1px 2px rgba(0, 0, 0, 0.20);
+            border-radius: 3px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .map-overlay h2 {
+            line-height: 24px;
+            display: block;
+            margin: 0 0 10px;
+        }
+
+        .map-overlay .legend .bar {
+            height: 10px;
+            width: 100%;
+            background: linear-gradient(to right, #fee0d2, #de2d26);
+        }
+
+        .map-overlay input {
+            background-color: transparent;
+            display: inline-block;
+            width: 100%;
+            position: relative;
+            margin: 0;
+            cursor: ew-resize;
+        }
+
+
+
+    </style>
+</head>
+<body>
+
+<div id='map'></div>
+
+<div class='map-overlay top'>
+    <div class='map-overlay-inner'>
+        <h1>Number of people with dementia</h1>
+        <h2>From 2011 to 2019</h2>
+        <label id='year'></label>
+        <input id='slider' type='range' min='2011' max='2019' step='1' value='2011' />
+    </div>
+
+    <div class='map-overlay-inner'>
+        <div id='legend' class='legend'>
+            <div class='bar'></div>
+            <div>Number</div>
+        </div>
+    </div>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+
+    <div class='showTheYear' id="showYear">
+        <h id="yearText" style=" color:white; font-size: 1000%">2011</h>
+
+    </div>
+</div>
+
+
+
+<script src='//d3js.org/d3.v3.min.js' charset='utf-8'></script>
+
+
+<script>
+
+
+    mapboxgl.accessToken = 'pk.eyJ1IjoianVzdGlubjAiLCJhIjoiY2ptMzNmcG9mMngwdDNrbGl6bHI1YnRudSJ9.qmqnS9JkkRi3lXfekh9XHw';
+
+    var bounds = [
+        [95.862611,-43.668367], // Southwest coordinates
+        [161.907946,-6.763828]  // Northeast coordinates
+    ];
+    var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/justinn0/cjv4rk7zg0sdv1fqogt999qnd',
+        center: [133.7751, -25.2744],
+        zoom: 4,
+        maxBounds: bounds
+    });
+
+
+    var years = [
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019
+
+    ];
+
+    function filterBy(year) {
+
+        var filters = ['==', 'year', year];
+        map.setFilter('earthquake-circles', filters);
+        map.setFilter('earthquake-labels', filters);
+
+// Set the label to the month
+        document.getElementById('year').textContent = years[year];
+    }
+
+    map.on('load', function() {
+
+// Data courtesy of http://earthquake.usgs.gov/
+// Query for significant earthquakes in 2015 URL request looked like this:
+// http://earthquake.usgs.gov/fdsnws/event/1/query
+//    ?format=geojson
+//    &starttime=2015-01-01
+//    &endtime=2015-12-31
+//    &minmagnitude=6'
+//
+// Here we're using d3 to help us make the ajax request but you can use
+// Any request method (library or otherwise) you wish.
+        d3.json('dementiaGrowAu.geojson', function(err, data) {
+            if (err) throw err;
+
+// Create a month property value based on time
+// used to filter against.
+            data.features = data.features.map(function(d) {
+                d.properties.year = new Date(d.properties.time).getFullYear();
+                return d;
+            });
+
+            map.addSource('earthquakes', {
+                'type': 'geojson',
+                data: data
+            });
+
+            map.addLayer({
+                'id': 'earthquake-circles',
+                'type': 'circle',
+                'source': 'earthquakes',
+                'paint': {
+                    'circle-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'mag'],
+                        1000, '#fee0d2',
+                        130000, '#de2d26'
+                    ],
+                    'circle-opacity': 0.9,
+                    'circle-radius': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'mag'],
+                        1000, 30,
+                        130000, 100
+                    ]
+                }
+            });
+
+            map.addLayer({
+                'id': 'earthquake-labels',
+                'type': 'symbol',
+                'source': 'earthquakes',
+                'layout': {
+                    'text-field': ['concat', ['to-string', ['get', 'mag']], ],
+                   // 'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+                    'text-size': 25
+                },
+                'paint': {
+                    //'text-color': 'rgba(0,0,0,0.5)'
+                   // 'text-color':'rgba(36, 37, 42, 1)'
+                }
+            });
+
+            filterBy(2011);
+
+            document.getElementById('slider').addEventListener('input', function(e) {
+                var year = parseInt(e.target.value, 10);
+                document.getElementById('yearText').innerHTML = parseInt(e.target.value, 10);
+                filterBy(year);
+            });
+        });
+    });
+
+
+
+</script>
+
+</body>
+</html>
