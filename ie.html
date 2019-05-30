@@ -48,8 +48,6 @@
             cursor: ew-resize;
         }
 
-
-
     </style>
 </head>
 <body>
@@ -82,15 +80,14 @@
     </div>
 </div>
 
+</body>
 
-
-<script src='//d3js.org/d3.v3.min.js' charset='utf-8'></script>
+<script src='//d3js.org/d3.v3.min.js' charset='utf-8' async defer></script>
 
 
 <script>
 
-
-    mapboxgl.accessToken = 'pk.eyJ1IjoianVzdGlubjAiLCJhIjoiY2ptMzNmcG9mMngwdDNrbGl6bHI1YnRudSJ9.qmqnS9JkkRi3lXfekh9XHw';
+    mapboxgl.accessToken = 'your_token'; // replace with your own Mapbox token
 
     var bounds = [
         [95.862611,-43.668367], // Southwest coordinates
@@ -100,9 +97,14 @@
         container: 'map',
         style: 'mapbox://styles/justinn0/cjv4rk7zg0sdv1fqogt999qnd',
         center: [133.7751, -25.2744],
-        zoom: 4,
+        //zoom: 3,
+        zoomControl: false,
+        attributionControl: false,
+        minZoom:3,
+        maxZoom: 4,
         maxBounds: bounds
     });
+
 
 
     var years = [
@@ -124,27 +126,17 @@
         map.setFilter('earthquake-circles', filters);
         map.setFilter('earthquake-labels', filters);
 
-// Set the label to the month
+// Set the label to the year
         document.getElementById('year').textContent = years[year];
     }
 
     map.on('load', function() {
 
-// Data courtesy of http://earthquake.usgs.gov/
-// Query for significant earthquakes in 2015 URL request looked like this:
-// http://earthquake.usgs.gov/fdsnws/event/1/query
-//    ?format=geojson
-//    &starttime=2015-01-01
-//    &endtime=2015-12-31
-//    &minmagnitude=6'
-//
-// Here we're using d3 to help us make the ajax request but you can use
-// Any request method (library or otherwise) you wish.
-        d3.json('dementiaGrowAu.geojson', function(err, data) {
+
+        d3.json('https://raw.githubusercontent.com/justinnn0/dementiaGrowth/master/dementiaGrowAu.geojson', function(err, data) {
             if (err) throw err;
 
-// Create a month property value based on time
-// used to filter against.
+
             data.features = data.features.map(function(d) {
                 d.properties.year = new Date(d.properties.time).getFullYear();
                 return d;
@@ -173,7 +165,7 @@
                         ['linear'],
                         ['get', 'mag'],
                         1000, 30,
-                        130000, 100
+                        130000, 130
                     ]
                 }
             });
@@ -184,12 +176,14 @@
                 'source': 'earthquakes',
                 'layout': {
                     'text-field': ['concat', ['to-string', ['get', 'mag']], ],
-                   // 'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-                    'text-size': 25
+                    'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+                    'text-size': 30
                 },
                 'paint': {
-                    //'text-color': 'rgba(0,0,0,0.5)'
-                   // 'text-color':'rgba(36, 37, 42, 1)'
+                    // alternative colors 
+                   // 'text-color': 'rgba(0,0,0,0.5)'
+
+                    //'text-color':'rgba(44, 130, 201, 1)'
                 }
             });
 
@@ -207,5 +201,11 @@
 
 </script>
 
-</body>
+
 </html>
+
+
+
+
+
+
